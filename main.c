@@ -7,11 +7,8 @@ int main()  {
     int a, b;
     int srInStolb[N];
     scanf("%i %i", &a, &b);
-    int minInStr[N], maxInStolb[N];
-    for (int i = 0; i < 255; i++)  {
-        minInStr[i] = 0;
-        maxInStolb[i] = 0;
-    }
+    int minInStr[N] = {0},
+        maxInStolb[N] = {0};
     for (int i = 0; i < b; i++)  {
         for (int j = 0; j < a; j++)  {
             scanf("%i", &matrix[i][j]);
