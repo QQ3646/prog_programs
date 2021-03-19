@@ -1,142 +1,99 @@
-#include <stdio.h>
+#include<stdio.h>
 #include <ctype.h>
 
-#define N 255 //размер строки
-#define R_S 64 //размер регул. выражения
+#define N 1024
+#define R_S 64
 
-//ss: ' - 0-9; " - a-z, A-Z
-int check_letter_or_num(char w, char custom) {
-    if ((w == custom) || (custom == '\"' && isalpha(w)) ||
-        (custom == '\'' && isdigit(w))) {
-        return 1;
-    }
-    return 0;
+int check_letter(char word, char *letter) {
+    return (word == *letter || (*letter == '\\' && ((*(letter + 1) == 'd' && isdigit(word)) ||
+                                                    (*(letter + 1) == 'D' && isalpha(word)))));
 }
 
-int check_not_letter(char **word, char letter) { //~
-    if (**word != letter && **word != '\0') {
-        (*word)++;
-        return 1;
-    }
-    return 0;
-}
-
-
-
-int check_many_entry_in_word(char **word, char *custom_letter, int n, int len) { //[|digit|*(xx)]
-    for (int i = 0; i < n * len; ++i) {
-        if (!check_letter_or_num(**word, *custom_letter)) {
+int check_entry_of_word(char *word, char *c_word) {
+    while (*(c_word)) {
+        if (!check_letter(*(word++), c_word))
             return 0;
-        }
-        (*word)++;
-        custom_letter = custom_letter + 1;
-        if ((i + 1) % len == 0)
-            custom_letter -= len;
+        if (*(c_word++) == '\\')
+            c_word++;
     }
     return 1;
 }
 
-void check_reg_exp(char *word, int *point, char *reg) {
-    while (*reg != '\0') {
-        if (isalnum(*reg) || *reg == '\\') {
-            char checkable_char = *reg;
-            if (*reg == '\\') {
-                reg++;
-                checkable_char = *reg == 'd' ? '\'' : '\"';
+int check_reg(char *word, char *reg) {
+    while (*reg) {
+        if (*reg == '[') {
+            int count = 0;
+            while (isdigit(*(++reg))) {
+                count *= 10;
+                count += *reg - '0';
             }
-            if (!check_letter_or_num(*word, checkable_char)) {
-                *point = 1;
-                return;
-            } else {
-                word++;
-                *point = 0;
-            }
-        } else if (*reg == '[') {
-            int times = 0;
             reg++;
-            while (isdigit(*reg)) {
-                times = (int) (times * 10 + *reg - '0');
-                reg++;
-            }
-            char custom_word[R_S];
-            reg += 2;
+            char new_word[N] = {};
             int j = 0;
-            while (isalpha(*reg) || *reg == '\\') {
-                if (*reg == '\\') {
-                    reg++;
-                    custom_word[j] = *reg == 'd' ? '\'' : '\"';
-                    j += 1;
-                    reg++;
-                } else {
-                    custom_word[j] = *reg;
-                    j += 1;
-                    reg++;
-                }
+            int counter = 0;
+            while (*(++reg) != ')') {
+                new_word[j] = *reg;
+                if (new_word[j++] == '\\')
+                    counter++;
             }
-            custom_word[j + 1] = '\0';
-            if (!check_many_entry_in_word(&word, custom_word, times, j)) {
-                *point = 1;
-                return;
-            } else
-                *point = 0;
+            j -= counter; //отнимаем, пушто выражение "\d" или "\D" занимает два места в регулярных выражениях, но при этом отвечает всего за один символ в слове
+            for (int i = 0; i < count; i++) {
+                if (!check_entry_of_word(word, new_word))
+                    return 0;
+                word += j;
+            }
+            reg += 2;
         } else if (*reg == '~') {
             reg++;
-            if (!check_not_letter(&word, *reg)) {
-                *point = 1;
-                return;
-            } else
-                *point = 0;
+            if (check_letter(*word, reg++) || *(word++) == '\0')
+                return 0;
         } else if (*reg == '<') {
-            reg++;
-            char custom_word[R_S];
+            char new_reg[N] = {};
             int j = 0;
-            while (isalpha(*reg) || *reg == '\\') {
-                if (*reg == '\\') {
-                    reg++;
-                    custom_word[j] = *reg == 'd' ? '\'' : '\"';
-                    j++;
-                    reg++;
-                } else {
-                    custom_word[j] = *reg;
-                    j++;
-                    reg++;
-                }
+            int counter = 0;
+            while (*(++reg) != '>') {
+                new_reg[j] = *reg;
+                if (new_reg[j++] == '\\')
+                    counter++;
             }
-            reg+=2;
+            j -= counter;
+            reg += 2;
             do {
-                check_reg_exp(word, point, reg);
-                if (*point == 0)
-                    return;
-            } while (check_many_entry_in_word(&word, custom_word, 1, j));
-            return;
+                if (check_reg(word, reg))
+                    return 1;
+                word += j;
+            } while (check_entry_of_word(word, new_reg));
+            return 0;
+        } else if (isalnum(*reg) || *reg == '\\') {
+            if (!check_letter(*(word++), reg))
+                return 0;
+            if (*(reg++) == '\\')
+                reg++;
         }
-        reg++;
     }
-    if (*word != '\0') {
-        *point = 1;
-    }
+    if (*word)
+        return 0;
+    return 1;
 }
 
-
 int main() {
-    char string[R_S];
+    char reg[R_S] = {};
+    char word[N] = {};
     int n;
     int valid_str[N] = {};
-    char word[1024];
-    scanf("%s", string);
+    scanf("%s", reg);
     scanf("%d", &n);
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < n; i++) {
         scanf("%s", word);
-        check_reg_exp(word, &valid_str[i], string);
+        valid_str[i] = check_reg(word, reg);
     }
     int b = 0;
     for (int i = 0; i < n; ++i) {
-        if (!valid_str[i]) {
-            printf("%i ", i);
+        if (valid_str[i]) {
+            printf("%d ", i);
             b = 1;
         }
     }
-    if (b == 0) {
+    if (!b)
         printf("none");
-    }
 }
