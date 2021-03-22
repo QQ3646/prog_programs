@@ -58,16 +58,7 @@ int check_reg(char *word, char *reg) {
             }
             j -= counter;
             reg += 2;
-            /* Вариант 1, без бесконечного цикла
-             * do {
-                if (check_reg(word, reg))
-                    return 1;
-                word += j;
-            } while (check_entry_of_word(word, new_reg));
-            return check_reg(word, reg); //обработка случая, когда все символы из <>* уже вышли
-            */
-
-//          >Вариант 2, но с бесконечным циклом
+//          >Вариант 2, с бесконечным циклом
             while (1) {
                 if (check_reg(word, reg))
                     return 1;
@@ -76,7 +67,7 @@ int check_reg(char *word, char *reg) {
                 word += j;
             }
             return 0;
-            //Не знаю что лучше из этих двух вариантов, оба вроде бы рабочие, но первый красивее
+            //был еще вариант без БЦ, но я все-таки выбрал этот
         } else if (isalnum(*reg) || *reg == '\\') {
             if (!check_letter(*(word++), reg))
                 return 0;
