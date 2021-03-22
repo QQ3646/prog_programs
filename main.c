@@ -58,12 +58,25 @@ int check_reg(char *word, char *reg) {
             }
             j -= counter;
             reg += 2;
-            do {
+            /* Вариант 1, без бесконечного цикла
+             * do {
                 if (check_reg(word, reg))
                     return 1;
                 word += j;
             } while (check_entry_of_word(word, new_reg));
+            return check_reg(word, reg); //обработка случая, когда все символы из <>* уже вышли
+            */
+
+//          >Вариант 2, но с бесконечным циклом
+            while (1) {
+                if (check_reg(word, reg))
+                    return 1;
+                if (!check_entry_of_word(word, new_reg))
+                    break;
+                word += j;
+            }
             return 0;
+            //Не знаю что лучше из этих двух вариантов, оба вроде бы рабочие, но первый красивее
         } else if (isalnum(*reg) || *reg == '\\') {
             if (!check_letter(*(word++), reg))
                 return 0;
@@ -71,27 +84,21 @@ int check_reg(char *word, char *reg) {
                 reg++;
         }
     }
-    if (*word)
-        return 0;
-    return 1;
+    return !*word;
 }
 
 int main() {
     char reg[R_S] = {};
     char word[N] = {};
     int n;
-    int valid_str[N] = {};
     scanf("%s", reg);
     scanf("%d", &n);
+    int b = 0;
     for (int i = 0; i < n; i++) {
         scanf("%s", word);
-        valid_str[i] = check_reg(word, reg);
-    }
-    int b = 0;
-    for (int i = 0; i < n; ++i) {
-        if (valid_str[i]) {
-            printf("%d ", i);
+        if (check_reg(word, reg)) {
             b = 1;
+            printf("%d ", i);
         }
     }
     if (!b)
