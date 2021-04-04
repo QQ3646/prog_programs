@@ -1,6 +1,19 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
+#include <math.h>
+#include <stdlib.h>
+
+
+//Из массива b копируем все в массив a
+void get_copy(int a[][3], int b[][3], int size){
+    for (int i = 0; i < size; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            a[i][j] = b[i][j];
+        }
+    }
+}
 
 void swap(int first[3], int second[3]) {
     for (int i = 0; i < 3; ++i) {
@@ -53,25 +66,26 @@ int det(int size, int (*matrix)[64]) {
 }
 
 int main() {
+    freopen("input.txt", "r", stdin);
+    freopen("output.txt", "w", stdout);
     int matrix[100][64][64] = {};
     int n = 0;
-    //    scanf("%d", &n);
     char mode[102] = {};
     gets(mode);
     unsigned int len = strlen(mode);
     int b = mode[len - 1] == '+';
     int step = 1;
-    for (int i = len - 1; i >= 0; --i) {
+        for (int i = len - 1; i >= 0; --i) {
         if (isdigit(mode[i])) {
             n += (mode[i] - '0') * step;
             step *= 10;
         }
     }
-    int sort_arr[100][3] = {}; // 0 - изнач. номер
-    // 1 - детерменант
-    // 2 - размер
+    int standard_arr[100][3] = {};  // 0 - изнач. номер
+                                    // 1 - детерменант
+                                    // 2 - размер
     for (int i = 0; i < n; ++i) {
-        sort_arr[i][0] = i;
+        standard_arr[i][0] = i;
     }
     for (int i = 0; i < n; ++i) {
         int size;
@@ -81,21 +95,50 @@ int main() {
                 scanf("%d", &(matrix[i][j][k]));
             }
         }
-        sort_arr[i][1] = det(size, matrix[i]);
-        sort_arr[i][2] = size;
+        standard_arr[i][1] = det(size, matrix[i]);
+        standard_arr[i][2] = size;
     }
-    quick_sort(sort_arr, 0, n - 1);
+    int copy_arr[100][3];
+    get_copy(copy_arr, standard_arr, n);
+    quick_sort(copy_arr, 0, n - 1);
     for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < sort_arr[i][2]; ++j) {
-            for (int k = 0; k < sort_arr[i][2]; ++k) {
-                printf("%d ", matrix[sort_arr[i][0]][j][k]);
+        for (int j = 0; j < copy_arr[i][2]; ++j) {
+            for (int k = 0; k < copy_arr[i][2]; ++k) {
+                printf("%d ", matrix[copy_arr[i][0]][j][k]);
             }
             printf("\n");
         }
     }
     //Доп. задание
     if (b) {
-
+        int tests; //<=1000
+        scanf("%d", &tests);
+        unsigned long diff_time[1000] = {};
+        for (int i = 0; i < tests; ++i) {
+            clock_t start = clock(), diff;
+            for (int i = 0; i < n; ++i) {
+                standard_arr[i][1] = det(standard_arr[i][2], matrix[i]);
+            }
+            quick_sort(copy_arr, 0, n - 1);
+            diff = clock() - start;
+            diff_time[i] = diff * 1000 / CLOCKS_PER_SEC;
+//            printf("The program took %" PRIu64 " seconds to execute\n", msec);
+        }
+        double srKvOt = 0;
+        double sr = 0;
+        for (int i = 0; i < tests; ++i) {
+            sr += (double) diff_time[i];
+        }
+        sr /= tests;
+        for (int i = 0; i < tests; ++i) {
+            srKvOt += pow(diff_time[i] - sr, 2);
+        }
+        srKvOt = sqrt(srKvOt / n);
+        freopen("stat.txt", "w", stdout);
+        printf("Среднее: %lf миллисекунд\nСреднее квадратичное(стандартное) отклонение: %lf", sr, srKvOt);
     }
+    int a;
+    scanf("%d", &a);
+//    getchar();
 }
 
