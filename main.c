@@ -106,7 +106,7 @@ void test(int matrix[100][64][64], int count_of_tests, void (*sort)(int[][3], in
 }
 
 int main() {
-    freopen("input.txt", "r", stdin);
+    freopen("newfile.txt", "r", stdin);
     freopen("output.txt", "w", stdout);
     int matrix[100][64][64] = {};
     int n = 0;
@@ -153,12 +153,13 @@ int main() {
         test(matrix, tests, &bubble_sort, "Сортировка пузырьком", n, standard_arr);
         printf("\nСлучайные значения:\n\n");
         srand(time(NULL));
-        n = rand() % 15 + 40; // 40 - 64
+        n = rand() % 64 + 40; // 40 - 64
         for (int i = 0; i < n; ++i) {
-            int size = rand() % 15 + 1;
+            int size = rand() % 8 + 1;
             for (int j = 0; j < size; ++j)
                 for (int k = 0; k < size; ++k)
-                    matrix[i][j][k] = rand() % 1000000;
+                    matrix[i][j][k] = rand() % 1000;
+            standard_arr[i][2] = size;
         }
         test(matrix, tests, &quick_sort, "Быстрая сортировка", n, standard_arr);
         test(matrix, tests, &bubble_sort, "Сортировка пузырьком", n, standard_arr);
