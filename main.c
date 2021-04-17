@@ -4,165 +4,205 @@
 #include <time.h>
 #include <math.h>
 #include <stdlib.h>
+#include <assert.h>
 
-#define IND 1
+#define MAX_SIZE 64
 
+unsigned long long level;
 
-void swap(int first[3], int second[3]) {
-    for (int i = 0; i < 3; ++i) {
-        int temp = first[i];
-        first[i] = second[i];
-        second[i] = temp;
-    }
+typedef struct MatrixInfo_ {
+    int number;
+    long long determinant;
+    int size;
+} MatrixInfo;
+
+typedef struct zap_ {
+    unsigned long worst_z;
+    long best_z;
+} zap;
+
+void swap(MatrixInfo *first, MatrixInfo *second) {
+    MatrixInfo temp = *first;
+    *first = *second;
+    *second = temp;
 }
 
-void bubble_sort(int a[][3], int null, int size) {
+void bubble_sort(MatrixInfo *a, int null, int size) {
     int b = 1;
-    while (b == 1) {
+    while (b) {
         b = 0;
-        for (int i = 0; i < size; ++i)
-            if (a[i] > a[i + 1]) {
-                swap(a[i], a[i + 1]);
+        for (int i = 0; i <= size; ++i) {
+            if (a[i].determinant > a[i + 1].determinant) {
+                swap(&a[i], &a[i + 1]);
                 b = 1;
             }
+        }
     }
 }
 
-void quick_sort(int a[][3], int left, int right) {
+void quick_sort(MatrixInfo *a, int left, int right) {
     if (left >= right)
         return;
     int wall = left;
-    int pivot = a[right][IND];
+    int pivot_ind = rand() % (right + 1 - left) + left;
+    swap(&a[pivot_ind], &a[right]);
+    long long pivot = a[right].determinant;
     for (int j = left; j <= right; ++j) {
-        if (pivot > a[j][IND])
-            swap(a[j], a[wall++]);
+        if (pivot > a[j].determinant)
+            swap(&a[j], &a[wall++]);
     }
-    swap(a[right], a[wall]);
+    swap(&a[right], &a[wall]);
     quick_sort(a, left, wall - 1);
     quick_sort(a, wall + 1, right);
 }
 
-//O(n^3)
-//Есть алгоритм лучше!!!!!!!!
-int det(int size, int (*matrix)[64]) {
-    if (size == 1)
-        return matrix[0][0];
-    else if (size == 2)
-        return matrix[0][0] * matrix[1][1] - (matrix[0][1] * matrix[1][0]);
-    else {
-        int sum = 0;
-        //Взятие минора 0-ого элемента i-ого столбца
-        for (int i = 0; i < size; ++i) {
-            int cofactor[64][64] = {};
-            int counter = 0;
-            //Вычисление алгебр. дополнения
-            for (int j = 0; j < size; ++j) {
-                if (i != j) {
-                    for (int k = 1; k < size; ++k)
-                        cofactor[k - 1][counter] = matrix[k][j];
-                    counter++;
-                }
+
+long long determinant(int matrix[][MAX_SIZE], int lvl, int size) {
+    long long result = 0;
+    int temp = 0;
+    for (int i = 0; i < size; ++i) {
+        if (!(level & (0x1 << i))) {
+            if (lvl < size - 1) {
+                level |= 0x1 << i;
+                result += ((i + temp) % 2 ? -1 : 1) * matrix[lvl][i] * determinant(matrix, lvl + 1, size);
+                level &= ~(0x1 << i);
+            } else {
+                return matrix[lvl][i];
             }
-            sum += (i % 2 == 0 ? 1 : -1) *
-                   matrix[0][i] * det(size - 1, cofactor);
+        } else {
+            temp++;
         }
-        return sum;
     }
+    return result;
 }
 
-void test(int matrix[100][64][64], int count_of_tests, void (*sort)(int[][3], int, int), char *name_of_sort,
-          int count_of_matrix, int sorted_array[][3]) {
-    unsigned long diff_time[1000] = {};
-    for (int i = 0; i < count_of_tests; ++i) {
-        clock_t start = clock(), diff;
-        for (int j = 0; j < count_of_matrix; ++j) {
-            sorted_array[j][IND] = det(sorted_array[j][2], matrix[j]);
-        }
-        sort(sorted_array, 0, count_of_matrix - 1);
-        diff = clock() - start;
-        diff_time[i] = diff * 1000 / CLOCKS_PER_SEC;
+long time_of_algorithm(int matrix[][MAX_SIZE][MAX_SIZE], int count_of_matrix, void (*sort)(MatrixInfo *, int, int), MatrixInfo *matrixInfo) {
+    clock_t start = clock(), diff;
+    for (int j = 0; j < count_of_matrix; ++j) {
+        matrixInfo[j].determinant = determinant(matrix[j], 0, matrixInfo[j].size);
     }
-    double srKvOt = 0;
+    sort(matrixInfo, 0, count_of_matrix - 1);
+    diff = clock() - start;
+    return diff * 1000 / CLOCKS_PER_SEC;
+}
+
+double test(int matrix[][MAX_SIZE][MAX_SIZE], int count_of_tests, void (*sort)(MatrixInfo *, int, int),
+          char *name_of_sort, int count_of_matrix, MatrixInfo *matrixInfo, int bool) {
+    long *diff_time = (long *) malloc(sizeof(long) * count_of_tests);
+    assert(diff_time);
+    freopen("stat.txt", "a", stdout);
     double sr = 0;
+    double srKvOt = 0;
+    zap b;
+    b.best_z = -1;
+    b.worst_z = 0;
     for (int i = 0; i < count_of_tests; ++i) {
+        diff_time[i] = time_of_algorithm(matrix, count_of_matrix, sort, matrixInfo);
+        if (diff_time[i] > b.worst_z)
+            b.worst_z = diff_time[i];
+        if (diff_time[i] < b.best_z || b.best_z == -1)
+            b.best_z = diff_time[i];
         sr += (double) diff_time[i];
     }
     sr /= count_of_tests;
-    for (int i = 0; i < count_of_tests; ++i) {
+    for (int i = 0; i < count_of_tests; ++i)
         srKvOt += pow(diff_time[i] - sr, 2);
-    }
     srKvOt = sqrt(srKvOt / count_of_matrix);
     printf("%s\n", name_of_sort);
     printf("Среднее: %lf миллисекунд\nСреднее квадратичное(стандартное) отклонение: %lf миллисекунд\n", sr, srKvOt);
-    //Сюда бы сортировку, а не костыль
-    unsigned long min = -1, max = 0;
-    for (int i = 0; i < count_of_tests; ++i) {
-        if (diff_time[i] > max)
-            max = diff_time[i];
-        if (diff_time[i] < min || min == -1)
-            min = diff_time[i];
-    }
-    printf("Худшее время запуска: %lu\nЛучшее время запуска: %lu\n\n", max, min);
+    printf("Худшее время запуска: %lu\nЛучшее время запуска: %ld\n\n", b.worst_z, b.best_z);
+    free(diff_time);
+    return sr;
 }
 
 int main() {
-    freopen("newfile.txt", "r", stdin);
+    freopen("input.txt", "r", stdin);
     freopen("output.txt", "w", stdout);
-    int matrix[100][64][64] = {};
-    int n = 0;
-    char mode[102] = {};
+    srand(time(NULL));
+    int matrix[100][MAX_SIZE][MAX_SIZE] = {}, n = 0, len, step = 1;
+    char mode[5] = {};
     gets(mode);
-    unsigned int len = strlen(mode);
+    len = (int) strlen(mode);
     //Режим "тестов" активируется + через пробел после количества матриц -> 'N +'
     int b = mode[len - 1] == '+';
-    int step = 1;
-    for (int i = len - 1; i >= 0; --i)
+    for (int i = len - 1; i >= 0; --i) {
         if (isdigit(mode[i])) {
             n += (mode[i] - '0') * step;
             step *= 10;
         }
-    int standard_arr[100][3] = {};  // 0 - изнач. номер
-    // 1 - детерменант
-    // 2 - размер
-    for (int i = 0; i < n; ++i)
-        standard_arr[i][0] = i;
-    for (int i = 0; i < n; ++i) {
-        int size;
-        scanf("%d", &size);
-        for (int j = 0; j < size; ++j)
-            for (int k = 0; k < size; ++k)
-                scanf("%d", &(matrix[i][j][k]));
-        standard_arr[i][1] = det(size, matrix[i]);
-        standard_arr[i][2] = size;
     }
-    quick_sort(standard_arr, 0, n - 1);
+    MatrixInfo *array = (MatrixInfo *) malloc(n * sizeof(MatrixInfo));
+    //проверка на NULL
+    assert(array);
+    for (int i = 0; i < n; ++i)
+        array[i].number = i;
     for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < standard_arr[i][2]; ++j) {
-            for (int k = 0; k < standard_arr[i][2]; ++k)
-                printf("%d ", matrix[standard_arr[i][0]][j][k]);
+        scanf("%d", &array[i].size);
+        for (int j = 0; j < array[i].size; ++j) {
+            for (int k = 0; k < array[i].size; ++k)
+                scanf("%d", &(matrix[i][j][k]));
+        }
+        array[i].determinant = determinant(matrix[i], 0, array[i].size);
+    }
+    quick_sort(array, 0, n - 1);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < array[i].size; ++j) {
+            for (int k = 0; k < array[i].size; ++k)
+                printf("%d ", matrix[array[i].number][j][k]);
             printf("\n");
         }
     }
     //Доп. задание
     if (b) {
         int tests; //<=1000
+        long worst = 0, best = -1;
         scanf("%d", &tests);
         freopen("stat.txt", "w", stdout);
         printf("Стандартные значения:\n\n");
-        test(matrix, tests, &quick_sort, "Быстрая сортировка", n, standard_arr);
-        test(matrix, tests, &bubble_sort, "Сортировка пузырьком", n, standard_arr);
-        printf("\nСлучайные значения:\n\n");
-        srand(time(NULL));
-        n = rand() % 64 + 40; // 40 - 64
-        for (int i = 0; i < n; ++i) {
-            int size = rand() % 8 + 1;
-            for (int j = 0; j < size; ++j)
-                for (int k = 0; k < size; ++k)
-                    matrix[i][j][k] = rand() % 1000;
-            standard_arr[i][2] = size;
+        test(matrix, tests, &quick_sort, "Быстрая сортировка", n, array, 1);
+        printf("\nСлучайные значения:\n\nХудший запуск записан в worst.txt\nЛучший запуск записан в best.txt");
+
+        for (int c = 0; c < 5; ++c) {
+            n = rand() % 64 + 40; // 40 - 64
+            for (int i = 0; i < n; ++i) {
+                array[i].size = rand() % 8 + 1;
+                for (int j = 0; j < array[i].size; ++j) {
+                    for (int k = 0; k < array[i].size; ++k)
+                        matrix[i][j][k] = rand() % 1000;
+                }
+            }
+            long temp = time_of_algorithm(matrix, tests, &quick_sort, array);
+            if (temp > worst) {
+                worst = temp;
+                freopen("worst.txt", "w", stdout);
+                printf("Время запуска: %ld\n%d\n", temp, n);
+                for (int i = 0; i < n; ++i) {
+                    printf("%d\n", array[i].size);
+                    for (int j = 0; j < array[i].size; ++j) {
+                        for (int k = 0; k < array[i].size; ++k) {
+                            printf("%d ",matrix[i][j][k]);
+                        }
+                        printf("\n");
+                    }
+                }
+            }
+            if (temp < best || best == -1) {
+                best = temp;
+                freopen("best.txt", "w", stdout);
+                printf("Время запуска: %ld\n%d\n", temp, n);
+                for (int i = 0; i < n; ++i) {
+                    printf("%d\n", array[i].size);
+                    for (int j = 0; j < array[i].size; ++j) {
+                        for (int k = 0; k < array[i].size; ++k) {
+                            printf("%d ",matrix[i][j][k]);
+                        }
+                        printf("\n");
+                    }
+                }
+            }
         }
-        test(matrix, tests, &quick_sort, "Быстрая сортировка", n, standard_arr);
-        test(matrix, tests, &bubble_sort, "Сортировка пузырьком", n, standard_arr);
     }
+    //Здесь иногда ломается sigsegv, но только иногда, при том, непонятно почему
+    free(array);
 }
 
