@@ -139,6 +139,35 @@ int removeNode(char word[256], node *root) {
 //    }
 //}
 
+//End of default BST struct and func
+
+//Start of AVLTree struct and func
+
+typedef struct avl_node_ {
+    char key[256];
+    short height;
+    struct avl_node_ *right;
+    struct avl_node_ *left;
+} avl_node;
+
+avl_node *simpleRightRotation(avl_node *node) {
+
+}
+
+//End of AVLTree struct and func
+
+//
+void removeFromMem(node *root) {
+    if (root == NULL)
+        return;
+    else {
+        if (root->left != NULL)
+            removeFromMem(root->left);
+        if (root->right != NULL)
+            removeFromMem(root->right);
+        free(root);
+    }
+}
 
 void printNodesFromLvl(node *currentNode, int lvl) {
     if (currentNode == NULL)
@@ -162,32 +191,8 @@ int countNodes(node *root) {
     return sum;
 }
 
-//End of default BST struct and func
-
-//Start of AVLTree struct and func
-
-typedef struct avl_node_ {
-    char key[256];
-    short height;
-    struct avl_node_ *right;
-    struct avl_node_ *left;
-} avl_node;
-
-//End of AVLTree struct and func
-
-void removeFromMem(node *root) {
-    if (root == NULL)
-        return;
-    else {
-        if (root->left != NULL)
-            removeFromMem(root->left);
-        if (root->right != NULL)
-            removeFromMem(root->right);
-        free(root);
-    }
-}
-
 int main() {
+    //Default BST
     node *mainRoot = NULL;
     char word[256];
     scanf("%s", word); //TEXT:
@@ -212,4 +217,5 @@ int main() {
     printf("%d\n", countNodes(mainRoot));
     printNodesFromLvl(mainRoot, level);
     removeFromMem(mainRoot);
+    //Default BST
 }
