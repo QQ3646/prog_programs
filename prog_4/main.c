@@ -36,7 +36,7 @@ node **findMostLeftNodeInRightSide(node **currentNode) {
 void addToTree(node **leaf1, node **root) {
     if (*root == NULL) {
         *root = (node *) malloc(sizeof(node));
-        if(*root == NULL)
+        if (*root == NULL)
             exit(1);
         **root = **leaf1;
     } else {
@@ -150,8 +150,72 @@ typedef struct avl_node_ {
     struct avl_node_ *left;
 } avl_node;
 
-avl_node *simpleRightRotation(avl_node *node) {
+void simpleRightRotation(avl_node **node) {
+    (*node)->height++;
+    (*node)->left->height++;
+    avl_node *temp = *node;
+    avl_node *leftNode = (*node)->left;
+    *node = leftNode;
+    temp->left = leftNode->right;
+    leftNode->right = temp;
+}
 
+void simpleLeftRotation(avl_node **node) {
+    (*node)->height--;
+    (*node)->right->height--;
+    avl_node *temp = *node;
+    avl_node *rightNode = (*node)->right;
+    *node = rightNode;
+    temp->right = rightNode->left;
+    rightNode->left = temp;
+}
+
+int addAVLNode(avl_node **root, char key[256]) {
+    int temp = 0;
+    int k = 0;
+    if (*root == NULL) {
+        avl_node *newNode = (avl_node *) malloc(sizeof(avl_node));
+        newNode->left = NULL;
+        newNode->right = NULL;
+        strcpy(newNode->key, key);
+        newNode->height = 0;
+        *root = newNode;
+        return 0;
+    }
+    if (strcmp(key, (*root)->key) > 0) {
+        if(!(k = addAVLNode(&((*root)->right), key))) {
+            temp = (*root)->height;
+            if ((*root)->height == 1) {
+                if ((*root)->right->height >= 0) {
+                    simpleLeftRotation(root);
+                } else {
+                    simpleRightRotation(&((*root)->right));
+                    simpleLeftRotation(root);
+                }
+                if (temp >= (*root)->height)
+                    return 1;
+            } else {
+                (*root)->height++;
+            }
+        }
+    } else if (strcmp(key, (*root)->key) < 0) {
+        if(!(k = addAVLNode(&((*root)->left), key))) {
+            temp = (*root)->height;
+            if ((*root)->height == -1) {
+                if ((*root)->left->height <= 0) {
+                    simpleRightRotation(root);
+                } else {
+                    simpleLeftRotation(&((*root)->left));
+                    simpleRightRotation(root);
+                }
+                if(temp <= (*root)->height)
+                    return 1;
+            } else {
+                (*root)->height--;
+            }
+        }
+    }
+    return k;
 }
 
 //End of AVLTree struct and func
@@ -183,6 +247,8 @@ void printNodesFromLvl(node *currentNode, int lvl) {
 }
 
 int countNodes(node *root) {
+    if (root == NULL)
+        return 0;
     int sum = 1;
     if (root->left != NULL)
         sum += countNodes(root->left);
@@ -193,29 +259,37 @@ int countNodes(node *root) {
 
 int main() {
     //Default BST
-    node *mainRoot = NULL;
+//    node *mainRoot = NULL;
     char word[256];
-    scanf("%s", word); //TEXT:
-    scanf("%s", word); //scan first word
-    while (strcmp(word, "DELETE:")) {
-        if (word[strlen(word) - 1] == '.')
-            word[strlen(word) - 1] = '\0';
-        node *anotherNode = (node *) malloc(sizeof(node));
-        strcpy(anotherNode->key, word);
-        anotherNode->right = NULL;
-        anotherNode->left = NULL;
-        addToTree(&anotherNode, &mainRoot);
-        scanf("%s", word);
-    }
-    scanf("%s", word); //scan first removing word
-    while (strcmp(word, "LEVEL:")) {
-        removeNode(word, mainRoot);
-        scanf("%s", word);
-    }
-    int level;
-    scanf("%d", &level); //scan lvl
-    printf("%d\n", countNodes(mainRoot));
-    printNodesFromLvl(mainRoot, level);
-    removeFromMem(mainRoot);
+//    scanf("%s", word); //TEXT:
+//    scanf("%s", word); //scan first word
+//    while (strcmp(word, "DELETE:") != 0) {
+//        if (word[strlen(word) - 1] == '.')
+//            word[strlen(word) - 1] = '\0';
+//        node *anotherNode = (node *) malloc(sizeof(node));
+//        strcpy(anotherNode->key, word);
+//        anotherNode->right = NULL;
+//        anotherNode->left = NULL;
+//        addToTree(&anotherNode, &mainRoot);
+//        scanf("%s", word);
+//    }
+//    scanf("%s", word); //scan first removing word
+//    while (strcmp(word, "LEVEL:") != 0) {
+//        removeNode(word, mainRoot);
+//        scanf("%s", word);
+//    }
+//    int level;
+//    scanf("%d", &level); //scan lvl
+//    printf("%d\n", countNodes(mainRoot));
+//    printNodesFromLvl(mainRoot, level);
+//    removeFromMem(mainRoot);
     //Default BST
-}
+    avl_node *mainAVLNode = NULL;
+    int count;
+    scanf("%d", &count);
+    for (int i = 0; i < count; ++i) {
+        scanf("%s", word);
+        addAVLNode(&mainAVLNode, word);
+        
+    }
+    }
