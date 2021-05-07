@@ -8,20 +8,13 @@ typedef struct node_ {
     struct node_ *left;
 } node;
 
-node *findFOfMostLeftNode(node *root) {
-    while (root->left) {
-        root = root->left;
-    }
-    return root;
-}
-
 node *addNode(node *root, char word[]) {
     if (root == NULL) {
-            node *leaf = (node*) malloc(sizeof(node));
-            leaf->left = NULL;
-            leaf->right = NULL;
-            strcpy(leaf->key, word);
-            return leaf;
+        node *leaf = (node *) malloc(sizeof(node));
+        leaf->left = NULL;
+        leaf->right = NULL;
+        strcpy(leaf->key, word);
+        return leaf;
     } else {
         if (strcmp(word, root->key) > 0) {
             root->right = addNode(root->right, word);
@@ -52,7 +45,9 @@ node *removeNode(node *root, char word[]) {
             free(root);
             return left;
         } else {
-            node *FLeftNode = findFOfMostLeftNode(root->right);
+            node *FLeftNode = root->right;
+            while (FLeftNode->left)
+                FLeftNode = FLeftNode->left;
             char temp[256];
             strcpy(temp, root->key);
             strcpy(root->key, FLeftNode->key);
