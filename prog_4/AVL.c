@@ -2,170 +2,176 @@
 #include <malloc.h>
 #include <string.h>
 
-typedef struct avl_node_ {
+typedef struct AVLNode_ {
     char key[256];
-    short height;
-    struct avl_node_ *right;
-    struct avl_node_ *left;
-} avl_node;
+    short balanceF;
+    struct AVLNode_ *left;
+    struct AVLNode_ *right;
+} AVLNode;
 
-void simpleRightRotation(avl_node **node) {
-    (*node)->height++;
-    (*node)->left->height++;
-    avl_node *temp = *node;
-    avl_node *leftNode = (*node)->left;
-    *node = leftNode;
-    temp->left = leftNode->right;
-    leftNode->right = temp;
+AVLNode *simpleRightRotate(AVLNode *MainNode) {
+    AVLNode *leftNode = MainNode->left;
+    leftNode->balanceF++;
+    MainNode->balanceF++;
+    MainNode->left = leftNode->right;
+    leftNode->right = MainNode;
+    return leftNode;
 }
 
-void simpleLeftRotation(avl_node **node) {
-    (*node)->height--;
-    (*node)->right->height--;
-    avl_node *temp = *node;
-    avl_node *rightNode = (*node)->right;
-    *node = rightNode;
-    temp->right = rightNode->left;
-    rightNode->left = temp;
+AVLNode *simpleLeftRotate(AVLNode *MainNode) {
+    AVLNode *rightNode = MainNode->right;
+    rightNode->balanceF--;
+    MainNode->balanceF--;
+    MainNode->right = rightNode->left;
+    rightNode->left = MainNode;
+    return rightNode;
 }
 
-int softMoreThan(int first, int second) {
-    return first >= second;
-}
-
-int softLowThan(int first, int second){
-    return first <= second;
-}
-// НЕ РАБОТАЕТ
-int balance(avl_node ***root, short diff, int (*comparison)(int, int),
-                  void (*firstRotation)(avl_node**), void (*secondRotation)(avl_node**)) {
-    int temp;
-    if ((**root)->height == diff) {
-        temp = ((**root))->height;
-        if (comparison((**root)->right->height, 0) == 1) {
-            firstRotation(*root);
+short balance(AVLNode **root, short diff) {
+    if ((*root)->balanceF == 1 && diff == 1) {
+        if ((*root)->right->balanceF >= 0) {
+            (*root) = simpleLeftRotate(*root);
         } else {
-            secondRotation(&((**root)->right));
-            firstRotation(*root);
+            (*root)->right = simpleRightRotate((*root)->right);
+            (*root) = simpleLeftRotate(*root);
         }
-        if (temp >= (**root)->height)
-            return 1;
-    } else
-        (**root)->height += diff;
+        return 0;
+    } else if ((*root)->balanceF == -1 && diff == -1) {
+        if ((*root)->left->balanceF <= 0) {
+            (*root) = simpleRightRotate(*root);
+        } else {
+            (*root)->left = simpleLeftRotate((*root)->left);
+            (*root) = simpleRightRotate(*root);
+        }
+        return 0;
+    } else {
+        (*root)->balanceF += diff;
+        if ((*root)->balanceF == 0)
+            return 0;
+        return diff;
+    }
+}
+
+short addNode(AVLNode **root, char word[]) {
+    if (!*root) {
+        *root = (AVLNode *) malloc(sizeof(AVLNode));
+        (*root)->balanceF = 0;
+        strcpy((*root)->key, word);
+        (*root)->left = NULL;
+        (*root)->right = NULL;
+        return 2; // 2 - код создания новой ноды, баллансим на дефолтное значение 1 или -1
+    } else if (strcmp(word, (*root)->key) > 0) {
+        short bf = addNode(&(*root)->right, word);
+        if (bf == 2 || bf == -1) {
+            return balance(root, 1);
+        } else {
+            return balance(root, bf);
+        }
+    } else if (strcmp(word, (*root)->key) < 0) {
+        short bf = addNode(&(*root)->left, word);
+        if (bf == 2 || bf == 1) {
+            return balance(root, -1);
+        } else {
+            return balance(root, bf);
+        }
+    }
     return 0;
 }
 
-int addAVLNode(avl_node **root, char key[256]) {
-    if (*root == NULL) {
-        avl_node *newNode = (avl_node *) malloc(sizeof(avl_node));
-        newNode->left = NULL;
-        newNode->right = NULL;
-        strcpy(newNode->key, key);
-        newNode->height = 0;
-        *root = newNode;
-        return 0;
+AVLNode *removeNode(AVLNode *root, char word[]) {
+    if (root == NULL) {
+        return NULL;
     }
-    int k = 0;
-    int temp;
-    if (strcmp(key, (*root)->key) > 0) {
-        if (!(k = addAVLNode(&((*root)->right), key))) {
-            if ((*root)->height == 1) {
-                temp = (*root)->height;
-                if ((*root)->right->height >= 0) {
-                    simpleLeftRotation(root);
-                } else {
-                    simpleRightRotation(&((*root)->right));
-                    simpleLeftRotation(root);
-                }
-                if (temp >= (*root)->height)
-                    return 1;
-            } else
-                (*root)->height++;
-        }
-    } else if (strcmp(key, (*root)->key) < 0) {
-        if (!(k = addAVLNode(&((*root)->left), key))) {
-            if ((*root)->height == -1) {
-                temp = (*root)->height;
-                if ((*root)->left->height <= 0) {
-                    simpleRightRotation(root);
-                } else {
-                    simpleLeftRotation(&((*root)->left));
-                    simpleRightRotation(root);
-                }
-                if (temp <= (*root)->height)
-                    return 1;
-            } else
-                (*root)->height--;
-        }
-    }
-    return k;
-}
-
-int removeAVLNode(avl_node *root, char word[256]) {
-    if (root == NULL)
-        return 0;
     if (strcmp(word, root->key) > 0) {
-        root->height--;
-        removeAVLNode(root->right, word);
+        short temp = root->right ? root->right->balanceF : 2;
+        root->right = removeNode(root->right, word);
+        if (temp == 2)
+            return root;
+        if (root->right == NULL || (temp == 1 || temp == -1) && root->right->balanceF == 0)
+            balance(&root, -1);
+        return root;
     } else if (strcmp(word, root->key) < 0) {
-        root->height++;
-        removeAVLNode(root->left, word);
+        short temp = root->left ? root->left->balanceF : 2;
+        root->left = removeNode(root->left, word);
+        if (temp == 2)
+            return root;
+        if (root->left == NULL || ((temp == 1 || temp == -1) && root->left->balanceF == 0))
+            balance(&root, 1);
+        return root;
     } else {
-        if (root->left == NULL && root->right == NULL) {
-
+        if (!root->left && !root->right) {
+            free(root);
+            return NULL;
+        } else if (!root->left && root->right) {
+            AVLNode *rightNode = root->right;
+            free(root);
+            return rightNode;
+        } else if (root->left && !root->right) {
+            AVLNode *leftNode = root->left;
+            free(root);
+            return leftNode;
+        } else {
+            short temp = root->right->balanceF;
+            AVLNode *mostLeftInRight = root->right;
+            while (mostLeftInRight->left != NULL) {
+                mostLeftInRight = mostLeftInRight->left;
+            }
+            char tempW[256];
+            strcpy(tempW, root->key);
+            strcpy(root->key, mostLeftInRight->key);
+            strcpy(mostLeftInRight->key, tempW);
+            root->right = removeNode(root->right, word);
+            if (root->right == NULL || ((temp == 1 || temp == -1) && root->right->balanceF == 0))
+                balance(&root, -1);
+            return root;
         }
     }
 }
 
-void removeAVLFromMem(avl_node *root) {
+int countNodes(AVLNode *root) {
+    if (!root)
+        return 0;
+    return 1 + countNodes(root->left) + countNodes(root->right);
+}
+
+void printFromLvl(AVLNode *root, int lvl) {
+    if (!root)
+        return;
+    if (lvl == 0)
+        printf("%s ", root->key);
+    else {
+        printFromLvl(root->left, lvl - 1);
+        printFromLvl(root->right, lvl - 1);
+    }
+}
+
+void removeFromMem(AVLNode *root) {
     if (root == NULL)
         return;
-    removeAVLFromMem(root->left);
-    removeAVLFromMem(root->right);
+    removeFromMem(root->left);
+    removeFromMem(root->right);
     free(root);
 }
 
-void printAVLNodesFromLvl(avl_node *root, int lvl) {
-    if (root == NULL)
-        return;
-    if (lvl == 0) {
-        printf("%s ", root->key);
-    } else {
-        printAVLNodesFromLvl(root->left, lvl - 1);
-        printAVLNodesFromLvl(root->right, lvl - 1);
-    }
-}
-
-int countAVLNodes(avl_node *root) {
-    if (root == NULL)
-        return 0;
-    return 1 + countAVLNodes(root->left) + countAVLNodes(root->right);
-}
-
-void printG(avl_node *root) {
-    if (root == NULL) {
-        printf("x");
-        return;
-    } else {
-        printf("(%s", root->key);
-        printG(root->left);
-        printG(root->right);
-        printf(")");
-    }
-}
-
-
 int main() {
     char word[256];
-    avl_node *mainAVLNode = NULL;
-    int count;
-    scanf("%d", &count);
-    for (int i = 0; i < count; ++i) {
+    AVLNode *mainRoot = NULL;
+    scanf("%s", word); //TEXT:
+    scanf("%s", word); //scan first word
+    while (strcmp(word, "DELETE:") != 0) {
+        if (word[strlen(word) - 1] == '.')
+            word[strlen(word) - 1] = '\0';
+        addNode(&mainRoot, word);
         scanf("%s", word);
-        addAVLNode(&mainAVLNode, word);
-        printG(mainAVLNode);
-        printf("\n");
     }
-
-    removeAVLFromMem(mainAVLNode);
+    scanf("%s", word); //scan first removing word
+    while (strcmp(word, "LEVEL:") != 0) {
+        mainRoot = removeNode(mainRoot, word);
+        scanf("%s", word);
+    }
+    int level;
+    scanf("%d", &level); //scan lvl
+    printf("%d\n", countNodes(mainRoot));
+    printFromLvl(mainRoot, level);
+    removeFromMem(mainRoot);
 }
