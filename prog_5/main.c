@@ -21,14 +21,14 @@ int main() {
     unsigned int P, N, M;
     scanf("%u %u %u", &P, &N, &M);
 
-    int **rooms = (int**) malloc(sizeof(int*) * N);
-    Room *roomsWeight = (Room*) malloc(sizeof(Room) * N);
+    int **rooms = (int **) malloc(sizeof(int *) * N);
+    Room *roomsWeight = (Room *) malloc(sizeof(Room) * N);
 
     if (!rooms || !roomsWeight)
         return 1;
     for (int i = 0; i < N; ++i) {
-        rooms[i] = (int*) malloc(sizeof(int*) * N);
-        if(!rooms[i]) {
+        rooms[i] = (int *) malloc(sizeof(int *) * N);
+        if (!rooms[i]) {
             return 1;
         }
         roomsWeight[i].number = i;
@@ -58,12 +58,21 @@ int main() {
 
         }
         roomsWeight[currentNum].beOrNotToBe = 1;
-        //TODO: heap realisation
-//        int n = 0;
-//        while (n < N) {
-//            if (roomsWeight[n])
-//        }
-        //temp
+        int n = 0;
+        while (2 * n + 2 < N) {
+            if (roomsWeight[n].len < INT_MAX) {
+                if (roomsWeight[n].len > roomsWeight[2 * n + 1].len) {
+                    swap(&roomsWeight[n], &roomsWeight[2 * n + 1]);
+                    n = 2 * n + 1;
+                    continue;
+                } else if (roomsWeight[n].len > roomsWeight[2 * n + 2].len) {
+                    swap(&roomsWeight[n], &roomsWeight[2 * n + 2]);
+                    n = 2 * n + 2;
+                    continue;
+                }
+            }
+            n = 2*n + 1;
+        }
         for (int i = 0; i < N; ++i) {
             if (roomsWeight[i].len < min && roomsWeight[i].beOrNotToBe == 0) {
                 min = roomsWeight[i].len;
@@ -71,10 +80,11 @@ int main() {
             }
         }
     }
+
     int maxT = 0;
     for (int i = 0; i < N; ++i) {
         if (maxT < roomsWeight[i].treasure && roomsWeight[i].len <= P)
             maxT = roomsWeight[i].treasure;
     }
-    printf("%d", maxT);
+    printf("\n%d", maxT);
 }
