@@ -2,89 +2,207 @@
 #include <malloc.h>
 #include <limits.h>
 
+typedef struct ListNode_ {
+    unsigned int jumpTo;
+    unsigned int jumpValue;
+    struct ListNode_ *next;
+} ListNode;
+
 typedef struct Room_ {
-    unsigned int number;
-    int len;
-    int beOrNotToBe;
-    int treasure;
+    unsigned int number; //num elem on heap
+    unsigned int lenToThatRoom;
+    char beOrNotToBe;
+    unsigned int treasure;
+    ListNode *head;
+    ListNode *end;
 } Room;
 
-void swap(Room *first, Room *second) {
-    Room temp = *first;
+typedef struct MinHeapNode_ {
+    unsigned int ind;
+    unsigned int path;
+} MinHeapNode;
+
+Room *addNewRoom() {
+    Room *newRoom = (Room *) malloc(sizeof(Room));
+    if (!newRoom)
+        exit(1);
+    newRoom->number = -1;
+    newRoom->lenToThatRoom = INT_MAX;
+    newRoom->beOrNotToBe = 0;
+    newRoom->head = NULL;
+    newRoom->end = NULL;
+    return newRoom;
+}
+
+
+//Быстрее и меньше по памяти, чем свап структур
+void swap(MinHeapNode **first, MinHeapNode **second) {
+    MinHeapNode *temp = *first;
     *first = *second;
     *second = temp;
+}
+
+void addNewJump(Room *roomFrom, unsigned int to, unsigned int value) {
+    ListNode *newNode = (ListNode *) malloc(sizeof(ListNode));
+    newNode->jumpTo = to;
+    newNode->jumpValue = value;
+    newNode->next = NULL;
+    if (!roomFrom->end && !roomFrom->head) {
+        roomFrom->end = newNode;
+        roomFrom->head = newNode;
+    } else {
+        roomFrom->end->next = newNode;
+        roomFrom->end = newNode;
+    }
 }
 
 int main() {
     freopen("input.txt", "r", stdin);
     freopen("output.txt", "w", stdout);
-    unsigned int P, N, M;
-    scanf("%u %u %u", &P, &N, &M);
+    unsigned int charges, roomsCount, jumpsCount;
+    scanf("%u %u %u", &charges, &roomsCount, &jumpsCount);
 
-    int **rooms = (int **) malloc(sizeof(int *) * N);
-    Room *roomsWeight = (Room *) malloc(sizeof(Room) * N);
+    MinHeapNode **minHeapOfRooms = (MinHeapNode **) malloc(sizeof(MinHeapNode *) * roomsCount - 1);
+//    int *minHeap = (int *) malloc(sizeof(int) * roomsCount - 1);
+    Room **rooms = (Room **) malloc(sizeof(Room *) * roomsCount);
+    if (!rooms || !minHeapOfRooms)
+        exit(1);
+    for (int i = 0; i < roomsCount; i++) {
+        rooms[i] = addNewRoom();
+    }
+    rooms[0]->lenToThatRoom = 0;
 
-    if (!rooms || !roomsWeight)
-        return 1;
-    for (int i = 0; i < N; ++i) {
-        rooms[i] = (int *) malloc(sizeof(int *) * N);
-        if (!rooms[i]) {
-            return 1;
-        }
-        roomsWeight[i].number = i;
-        roomsWeight[i].len = INT_MAX;
-        roomsWeight[i].beOrNotToBe = 0;
-        for (int j = 0; j < N; ++j) {
-            rooms[i][j] = -1;
-        }
+    for (int i = 0; i < jumpsCount; i++) {
+        unsigned int from, to, value;
+        scanf("%u %u %u", &from, &to, &value);
+        addNewJump(rooms[from], to, value);
     }
-    roomsWeight[0].len = 0;
-    for (int i = 0; i < M; ++i) {
-        unsigned int from, to;
-        int value;
-        scanf("%u %u %d", &from, &to, &value);
-        rooms[from][to] = value;
-    }
-    for (int i = 0; i < N; ++i) {
-        scanf("%d", &roomsWeight[i].treasure);
-    }
-    int currentNum = 0;
-    for (int j = 0; j < N; ++j) {
-        int min = INT_MAX;
-        for (int i = 0; i < N; ++i) {
-            if (rooms[currentNum][i] > 0 && rooms[currentNum][i] + roomsWeight[currentNum].len < roomsWeight[i].len) {
-                roomsWeight[i].len = rooms[currentNum][i] + roomsWeight[currentNum].len;
-            }
 
-        }
-        roomsWeight[currentNum].beOrNotToBe = 1;
-        int n = 0;
-        while (2 * n + 2 < N) {
-            if (roomsWeight[n].len < INT_MAX) {
-                if (roomsWeight[n].len > roomsWeight[2 * n + 1].len) {
-                    swap(&roomsWeight[n], &roomsWeight[2 * n + 1]);
-                    n = 2 * n + 1;
-                    continue;
-                } else if (roomsWeight[n].len > roomsWeight[2 * n + 2].len) {
-                    swap(&roomsWeight[n], &roomsWeight[2 * n + 2]);
-                    n = 2 * n + 2;
-                    continue;
+    for (int i = 0; i < roomsCount; i++)
+        scanf("%u", &rooms[i]->treasure);
+
+    int heapSize = 0;
+    unsigned int currentRoomNum = 0;
+    for (int i = 0; i < roomsCount; i++) {
+        ListNode *currentNode = rooms[currentRoomNum]->head;
+        while (currentNode) {
+            if (rooms[currentRoomNum]->lenToThatRoom + currentNode->jumpValue <
+                rooms[currentNode->jumpTo]->lenToThatRoom) {
+                rooms[currentNode->jumpTo]->lenToThatRoom =
+                        rooms[currentRoomNum]->lenToThatRoom + currentNode->jumpValue;
+                //create elem on heap
+                if (rooms[currentNode->jumpTo]->number == -1) {
+                    minHeapOfRooms[heapSize] = (MinHeapNode*) malloc(sizeof(MinHeapNode));
+                    minHeapOfRooms[heapSize]->ind = currentNode->jumpTo;
+                    minHeapOfRooms[heapSize]->path = rooms[currentNode->jumpTo]->lenToThatRoom;
+                    rooms[currentNode->jumpTo]->number = heapSize++;
+                } else {
+                    minHeapOfRooms[rooms[currentNode->jumpTo]->number]->path = rooms[currentNode->jumpTo]->lenToThatRoom;
+                }
+                //save property of heap
+                unsigned int n = rooms[currentNode->jumpTo]->number;
+                while (n != 0) {
+                    if (minHeapOfRooms[n]->path < minHeapOfRooms[(n - 1) / 2]->path) {
+                        unsigned int temp = rooms[minHeapOfRooms[n]->ind]->number;
+                        rooms[minHeapOfRooms[n]->ind]->number = rooms[minHeapOfRooms[(n - 1) / 2]->ind]->number;
+                        rooms[minHeapOfRooms[(n - 1) / 2]->ind]->number = temp;
+
+                        swap(&minHeapOfRooms[n], &minHeapOfRooms[(n - 1) / 2]);
+                        n = (n - 1) / 2;
+                    } else
+                        break;
                 }
             }
-            n = 2*n + 1;
+            currentNode = currentNode->next;
         }
-        for (int i = 0; i < N; ++i) {
-            if (roomsWeight[i].len < min && roomsWeight[i].beOrNotToBe == 0) {
-                min = roomsWeight[i].len;
-                currentNum = i;
+        if(heapSize == 0)
+            break;
+        currentRoomNum = minHeapOfRooms[0]->ind;
+        free(minHeapOfRooms[0]);
+        minHeapOfRooms[0] = minHeapOfRooms[--heapSize];
+        int n = 0;
+        while (1) {
+            int minLeft = 2*n + 1;
+            int minRight = 2*n + 2;
+            int current = n;
+
+            if (minLeft < heapSize && minHeapOfRooms[minLeft]->path < minHeapOfRooms[current]->path)
+                current = minLeft;
+            if (minRight < heapSize && minHeapOfRooms[minRight]->path < minHeapOfRooms[current]->path)
+                current = minRight;
+            if (n == current)
+                break;
+            else {
+                unsigned int temp = minHeapOfRooms[current]->ind;
+                minHeapOfRooms[current]->ind = minHeapOfRooms[n]->ind;
+                minHeapOfRooms[n]->ind = temp;
+                swap(&minHeapOfRooms[current], &minHeapOfRooms[n]);
+                n = current;
             }
         }
+        //        while (roomsCount > 2 * +1) {
+//            if (2 * n + 2 < roomsCount && min > rooms[2 * n + 2]->lenToThatRoom &&
+//                    rooms[2 * n + 2]->lenToThatRoom < rooms[2 * n + 1]->lenToThatRoom &&
+//                    rooms[2 * n + 2]->beOrNotToBe == 0) {
+//                min = rooms[2 * n + 2]->lenToThatRoom;
+//                n = 2 * n + 2;
+//            } else if (rooms[n]->lenToThatRoom > rooms[2 * n + 1]->lenToThatRoom &&
+//                       rooms[2 * n + 1]->beOrNotToBe == 0) {
+//                min = rooms[2 * n + 1]->lenToThatRoom;
+//                n = 2 * n + 1;
+//            } else
+//                break;
+//                int ind = getIndOfNeededRoomInHeap(minHeapOfRooms, currentNode->jumpTo, heapSize);
+//                if (ind == -1) {
+//                    minHeapOfRooms[heapSize] = (MinHeapNode*) malloc(sizeof(minHeapOfRooms));
+//                    minHeapOfRooms[heapSize]->ind = currentNode->jumpTo;
+//                    minHeapOfRooms[heapSize]->path = rooms[currentNode->jumpTo]->lenToThatRoom;
+//                    heapSize++;
+//                } else {
+//                    minHeapOfRooms[ind]->path = rooms[currentRoomNum]->lenToThatRoom + currentNode->jumpValue;
+//                }
+//            }
+//            currentNode = currentNode->next;
+//        }
+//
+//        //возвращаем свойства кучи
+//        int n = currentRoomNum;
+//        while (roomsCount > 2 * n + 1) {
+//            // int left = rooms[]
+//            if (2 * n + 2 < roomsCount && rooms[n]->lenToThatRoom > rooms[2 * n + 2]->lenToThatRoom &&
+//                rooms[2 * n + 2]->lenToThatRoom < rooms[2 * n + 1]->lenToThatRoom) {
+//                swap(&rooms[n], &rooms[2 * n + 2]);
+//                n = 2 * n + 2;
+//            } else if (rooms[n]->lenToThatRoom > rooms[2 * n + 1]->lenToThatRoom) {
+//                swap(&rooms[n], &rooms[2 * n + 1]);
+//                n = 2 * n + 1;
+//            } else
+//                break;
+//        }
+//
+//        //Получаем следующий номер комнаты
+//        n = 0;
+//        unsigned int min = INT_MAX;
+//        while (roomsCount > 2 * +1) {
+//            if (2 * n + 2 < roomsCount && min > rooms[2 * n + 2]->lenToThatRoom &&
+//                    rooms[2 * n + 2]->lenToThatRoom < rooms[2 * n + 1]->lenToThatRoom &&
+//                    rooms[2 * n + 2]->beOrNotToBe == 0) {
+//                min = rooms[2 * n + 2]->lenToThatRoom;
+//                n = 2 * n + 2;
+//            } else if (rooms[n]->lenToThatRoom > rooms[2 * n + 1]->lenToThatRoom &&
+//                       rooms[2 * n + 1]->beOrNotToBe == 0) {
+//                min = rooms[2 * n + 1]->lenToThatRoom;
+//                n = 2 * n + 1;
+//            } else
+//                break;
+//        }
+//        currentRoomNum = n;
     }
 
-    int maxT = 0;
-    for (int i = 0; i < N; ++i) {
-        if (maxT < roomsWeight[i].treasure && roomsWeight[i].len <= P)
-            maxT = roomsWeight[i].treasure;
+    unsigned int maxT = 0;
+    for (int i = 0; i < roomsCount; ++i) {
+        if (maxT < rooms[i]->treasure && rooms[i]->lenToThatRoom <= charges)
+            maxT = rooms[i]->treasure;
     }
-    printf("\n%d", maxT);
+    printf("%u", maxT);
 }
