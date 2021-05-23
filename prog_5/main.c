@@ -140,63 +140,6 @@ int main() {
                 n = current;
             }
         }
-        //        while (roomsCount > 2 * +1) {
-//            if (2 * n + 2 < roomsCount && min > rooms[2 * n + 2]->lenToThatRoom &&
-//                    rooms[2 * n + 2]->lenToThatRoom < rooms[2 * n + 1]->lenToThatRoom &&
-//                    rooms[2 * n + 2]->beOrNotToBe == 0) {
-//                min = rooms[2 * n + 2]->lenToThatRoom;
-//                n = 2 * n + 2;
-//            } else if (rooms[n]->lenToThatRoom > rooms[2 * n + 1]->lenToThatRoom &&
-//                       rooms[2 * n + 1]->beOrNotToBe == 0) {
-//                min = rooms[2 * n + 1]->lenToThatRoom;
-//                n = 2 * n + 1;
-//            } else
-//                break;
-//                int ind = getIndOfNeededRoomInHeap(minHeapOfRooms, currentNode->jumpTo, heapSize);
-//                if (ind == -1) {
-//                    minHeapOfRooms[heapSize] = (MinHeapNode*) malloc(sizeof(minHeapOfRooms));
-//                    minHeapOfRooms[heapSize]->ind = currentNode->jumpTo;
-//                    minHeapOfRooms[heapSize]->path = rooms[currentNode->jumpTo]->lenToThatRoom;
-//                    heapSize++;
-//                } else {
-//                    minHeapOfRooms[ind]->path = rooms[currentRoomNum]->lenToThatRoom + currentNode->jumpValue;
-//                }
-//            }
-//            currentNode = currentNode->next;
-//        }
-//
-//        //возвращаем свойства кучи
-//        int n = currentRoomNum;
-//        while (roomsCount > 2 * n + 1) {
-//            // int left = rooms[]
-//            if (2 * n + 2 < roomsCount && rooms[n]->lenToThatRoom > rooms[2 * n + 2]->lenToThatRoom &&
-//                rooms[2 * n + 2]->lenToThatRoom < rooms[2 * n + 1]->lenToThatRoom) {
-//                swap(&rooms[n], &rooms[2 * n + 2]);
-//                n = 2 * n + 2;
-//            } else if (rooms[n]->lenToThatRoom > rooms[2 * n + 1]->lenToThatRoom) {
-//                swap(&rooms[n], &rooms[2 * n + 1]);
-//                n = 2 * n + 1;
-//            } else
-//                break;
-//        }
-//
-//        //Получаем следующий номер комнаты
-//        n = 0;
-//        unsigned int min = INT_MAX;
-//        while (roomsCount > 2 * +1) {
-//            if (2 * n + 2 < roomsCount && min > rooms[2 * n + 2]->lenToThatRoom &&
-//                    rooms[2 * n + 2]->lenToThatRoom < rooms[2 * n + 1]->lenToThatRoom &&
-//                    rooms[2 * n + 2]->beOrNotToBe == 0) {
-//                min = rooms[2 * n + 2]->lenToThatRoom;
-//                n = 2 * n + 2;
-//            } else if (rooms[n]->lenToThatRoom > rooms[2 * n + 1]->lenToThatRoom &&
-//                       rooms[2 * n + 1]->beOrNotToBe == 0) {
-//                min = rooms[2 * n + 1]->lenToThatRoom;
-//                n = 2 * n + 1;
-//            } else
-//                break;
-//        }
-//        currentRoomNum = n;
     }
 
     unsigned int maxT = 0;
