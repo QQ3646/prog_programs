@@ -11,7 +11,6 @@ typedef struct ListNode_ {
 typedef struct Room_ {
     unsigned int number; //num elem on heap
     unsigned int lenToThatRoom;
-    char beOrNotToBe;
     unsigned int treasure;
     ListNode *head;
     ListNode *end;
@@ -28,7 +27,6 @@ Room *addNewRoom() {
         exit(1);
     newRoom->number = -1;
     newRoom->lenToThatRoom = INT_MAX;
-    newRoom->beOrNotToBe = 0;
     newRoom->head = NULL;
     newRoom->end = NULL;
     return newRoom;
@@ -57,13 +55,16 @@ void addNewJump(Room *roomFrom, unsigned int to, unsigned int value) {
 }
 
 int main() {
-    freopen("input.txt", "r", stdin);
-    freopen("output.txt", "w", stdout);
+    FILE *input, *output;
+    input = fopen("input.txt", "r");
+    output = fopen("output.txt", "w");
+    if (!input || !output)
+        return 1;
+
     unsigned int charges, roomsCount, jumpsCount;
-    scanf("%u %u %u", &charges, &roomsCount, &jumpsCount);
+    fscanf(input, "%u %u %u", &charges, &roomsCount, &jumpsCount);
 
     MinHeapNode **minHeapOfRooms = (MinHeapNode **) malloc(sizeof(MinHeapNode *) * roomsCount - 1);
-//    int *minHeap = (int *) malloc(sizeof(int) * roomsCount - 1);
     Room **rooms = (Room **) malloc(sizeof(Room *) * roomsCount);
     if (!rooms || !minHeapOfRooms)
         exit(1);
@@ -74,12 +75,12 @@ int main() {
 
     for (int i = 0; i < jumpsCount; i++) {
         unsigned int from, to, value;
-        scanf("%u %u %u", &from, &to, &value);
+        fscanf(input, "%u %u %u", &from, &to, &value);
         addNewJump(rooms[from], to, value);
     }
 
     for (int i = 0; i < roomsCount; i++)
-        scanf("%u", &rooms[i]->treasure);
+        fscanf(input, "%u", &rooms[i]->treasure);
 
     int heapSize = 0;
     unsigned int currentRoomNum = 0;
@@ -147,5 +148,20 @@ int main() {
         if (maxT < rooms[i]->treasure && rooms[i]->lenToThatRoom <= charges)
             maxT = rooms[i]->treasure;
     }
-    printf("%u", maxT);
+
+    for (int i = 0; i < roomsCount; ++i) {
+        ListNode *current = rooms[i]->head;
+        while (current) {
+            ListNode *temp = current->next;
+            free(current);
+            current = temp;
+        }
+        free(rooms[i]);
+    }
+    free(rooms);
+    for (int i = 0; i < heapSize; ++i) {
+        free(minHeapOfRooms[i]);
+    }
+    free(minHeapOfRooms);
+    fprintf(output, "%u", maxT);
 }
