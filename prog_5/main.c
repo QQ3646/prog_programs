@@ -164,4 +164,6 @@ int main() {
     }
     free(minHeapOfRooms);
     fprintf(output, "%u", maxT);
+    fclose(input);
+    fclose(output);
 }
