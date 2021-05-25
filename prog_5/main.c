@@ -9,7 +9,7 @@ typedef struct ListNode_ {
 } ListNode;
 
 typedef struct Room_ {
-    unsigned int number; //num elem on heap
+    int number; //num elem on heap
     unsigned int lenToThatRoom;
     unsigned int treasure;
     ListNode *head;
@@ -72,7 +72,6 @@ int main() {
         rooms[i] = addNewRoom();
     }
     rooms[0]->lenToThatRoom = 0;
-
     for (int i = 0; i < jumpsCount; i++) {
         unsigned int from, to, value;
         fscanf(input, "%u %u %u", &from, &to, &value);
@@ -87,13 +86,12 @@ int main() {
     for (int i = 0; i < roomsCount; i++) {
         ListNode *currentNode = rooms[currentRoomNum]->head;
         while (currentNode) {
-            if (rooms[currentRoomNum]->lenToThatRoom + currentNode->jumpValue <
-                rooms[currentNode->jumpTo]->lenToThatRoom) {
-                rooms[currentNode->jumpTo]->lenToThatRoom =
-                        rooms[currentRoomNum]->lenToThatRoom + currentNode->jumpValue;
+            if (rooms[currentRoomNum]->lenToThatRoom + currentNode->jumpValue < rooms[currentNode->jumpTo]->lenToThatRoom) {
+                rooms[currentNode->jumpTo]->lenToThatRoom = rooms[currentRoomNum]->lenToThatRoom + currentNode->jumpValue;
+
                 //create elem on heap
                 if (rooms[currentNode->jumpTo]->number == -1) {
-                    minHeapOfRooms[heapSize] = (MinHeapNode*) malloc(sizeof(MinHeapNode));
+                    minHeapOfRooms[heapSize] = (MinHeapNode *) malloc(sizeof(MinHeapNode));
                     minHeapOfRooms[heapSize]->ind = currentNode->jumpTo;
                     minHeapOfRooms[heapSize]->path = rooms[currentNode->jumpTo]->lenToThatRoom;
                     rooms[currentNode->jumpTo]->number = heapSize++;
@@ -101,10 +99,10 @@ int main() {
                     minHeapOfRooms[rooms[currentNode->jumpTo]->number]->path = rooms[currentNode->jumpTo]->lenToThatRoom;
                 }
                 //save property of heap
-                unsigned int n = rooms[currentNode->jumpTo]->number;
+                int n = rooms[currentNode->jumpTo]->number;
                 while (n != 0) {
                     if (minHeapOfRooms[n]->path < minHeapOfRooms[(n - 1) / 2]->path) {
-                        unsigned int temp = rooms[minHeapOfRooms[n]->ind]->number;
+                        int temp = rooms[minHeapOfRooms[n]->ind]->number;
                         rooms[minHeapOfRooms[n]->ind]->number = rooms[minHeapOfRooms[(n - 1) / 2]->ind]->number;
                         rooms[minHeapOfRooms[(n - 1) / 2]->ind]->number = temp;
 
@@ -116,15 +114,20 @@ int main() {
             }
             currentNode = currentNode->next;
         }
-        if(heapSize == 0)
+        if (heapSize == 0)
             break;
         currentRoomNum = minHeapOfRooms[0]->ind;
         free(minHeapOfRooms[0]);
-        minHeapOfRooms[0] = minHeapOfRooms[--heapSize];
+        heapSize--;
+        if (heapSize != 0) {
+            minHeapOfRooms[0] = minHeapOfRooms[heapSize];
+            rooms[minHeapOfRooms[0]->ind]->number = 0;
+            minHeapOfRooms[heapSize] = NULL;
+        }
         int n = 0;
         while (1) {
-            int minLeft = 2*n + 1;
-            int minRight = 2*n + 2;
+            int minLeft = 2 * n + 1;
+            int minRight = 2 * n + 2;
             int current = n;
 
             if (minLeft < heapSize && minHeapOfRooms[minLeft]->path < minHeapOfRooms[current]->path)
@@ -134,9 +137,9 @@ int main() {
             if (n == current)
                 break;
             else {
-                unsigned int temp = minHeapOfRooms[current]->ind;
-                minHeapOfRooms[current]->ind = minHeapOfRooms[n]->ind;
-                minHeapOfRooms[n]->ind = temp;
+                int temp = rooms[minHeapOfRooms[n]->ind]->number;
+                rooms[minHeapOfRooms[n]->ind]->number = rooms[minHeapOfRooms[current]->ind]->number;
+                rooms[minHeapOfRooms[current]->ind]->number = temp;
                 swap(&minHeapOfRooms[current], &minHeapOfRooms[n]);
                 n = current;
             }
